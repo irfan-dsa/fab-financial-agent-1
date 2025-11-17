@@ -1,4 +1,4 @@
-# FAB Financial Multi-Agent System (PoC)
+# FAB Financial Multi-Agent System 
 
 ## Purpose
 Proof-of-concept for multi-agent financial analysis for First Abu Dhabi Bank.
