@@ -1,7 +1,7 @@
 # FAB Financial Multi-Agent System 
 
 ## Purpose
-Proof-of-concept for multi-agent financial analysis for First Abu Dhabi Bank.
+ multi-agent financial analysis for First Abu Dhabi Bank.
 
 ## Quickstart
 1. python3.11 -m venv .venv
