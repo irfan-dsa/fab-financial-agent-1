@@ -1,5 +1,9 @@
-﻿import json, os, re
+# type: ignore
+import json
+import os
+import re
 from pathlib import Path
+
 from agents.extractor_adapter import extract_metric_from_file
 
 RAW_DIR = Path("data/raw")
@@ -17,14 +21,16 @@ METRICS = [
     "total_assets",
     "total_loans",
     "customer_deposits",
-    "shareholder_equity"
+    "shareholder_equity",
 ]
+
 
 def detect_qy_from_filename(name):
     m = re.search(r"Q([1-4])[-_ ]?(\d{4})", name, re.IGNORECASE)
     return f"Q{m.group(1)}_{m.group(2)}" if m else None
 
-ground_truth = {}
+
+ground_truth: Dict[str, Any] = {}
 
 for pdf in RAW_DIR.glob("*.pdf"):
     qy = detect_qy_from_filename(pdf.name)
@@ -47,10 +53,10 @@ for pdf in RAW_DIR.glob("*.pdf"):
                     "source_file": best["source_file"],
                     "file_sha256": best["file_sha256"],
                 }
-                print(f"  ✓ {metric}: {best['value_millions']}")
+                print(f"  ? {metric}: {best['value_millions']}")
             else:
                 ground_truth[qy][metric] = None
-                print(f"  ✗ {metric}: NOT FOUND")
+                print(f"  ? {metric}: NOT FOUND")
         except Exception as ex:
             ground_truth[qy][metric] = None
             print(f"  ERROR {metric}: {ex}")

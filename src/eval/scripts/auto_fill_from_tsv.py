@@ -1,5 +1,7 @@
-﻿import sys, json
+﻿import json
+import sys
 from pathlib import Path
+
 sys.path.insert(0, "src")
 
 # imports from your project
@@ -17,9 +19,10 @@ OUT_FILE.parent.mkdir(parents=True, exist_ok=True)
 if not OUT_FILE.exists():
     OUT_FILE.write_text("", encoding="utf-8")
 
+
 def map_period_to_filename(period_label: str) -> str:
     # expected period_label like "Q1_2024" or "Q1 2024"
-    p = period_label.replace("_"," ").strip()
+    p = period_label.replace("_", " ").strip()
     try:
         q, y = p.split()
     except Exception:
@@ -27,7 +30,12 @@ def map_period_to_filename(period_label: str) -> str:
     # construct filename pattern used in your repo
     return f"FAB-FS-{q}-{y}-English.pdf"
 
-lines = [l.strip() for l in MISSING_TSV.read_text(encoding="utf-16").splitlines() if l.strip()]
+
+lines = [
+    l.strip()
+    for l in MISSING_TSV.read_text(encoding="utf-16").splitlines()
+    if l.strip()
+]
 if not lines:
     print("NO_MISSING_ENTRIES")
     sys.exit(0)
@@ -47,12 +55,14 @@ for li in lines:
             print("SKIP: malformed line:", li)
             continue
 
-    period_label = period_part.replace("_"," ")
+    period_label = period_part.replace("_", " ")
     fname = map_period_to_filename(period_part)
     file_path = Path("data/raw") / fname
     if not file_path.exists():
         # try any matching file in data/raw that contains period string (robust)
-        candidates = list(Path("data/raw").glob(f"*{period_part.replace('_',' ')}*.pdf")) + list(Path("data/raw").glob(f"*{period_part}*.pdf"))
+        candidates = list(
+            Path("data/raw").glob(f"*{period_part.replace('_',' ')}*.pdf")
+        ) + list(Path("data/raw").glob(f"*{period_part}*.pdf"))
         file_path = candidates[0] if candidates else file_path
 
     if not file_path.exists():
@@ -60,7 +70,9 @@ for li in lines:
         continue
 
     try:
-        proofs = hybrid.extract_metric_from_file(str(file_path), metric_key, period_label=period_label)
+        proofs = hybrid.extract_metric_from_file(
+            str(file_path), metric_key, period_label=period_label
+        )
     except Exception as e:
         print("EXTRACT ERROR:", file_path.name, period_label, metric_key, "->", e)
         continue
@@ -72,7 +84,9 @@ for li in lines:
     # try to pick best candidate via selector, fallback to first proof
     best = None
     try:
-        cand = selector(proofs, metric_key.replace("_"," "), metric_key, top_n=1, return_all=False)
+        cand = selector(
+            proofs, metric_key.replace("_", " "), metric_key, top_n=1, return_all=False
+        )
         if cand:
             best = cand[0]
     except Exception:
@@ -86,7 +100,7 @@ for li in lines:
         "file": file_path.name,
         "period": period_label,
         "metric": metric_key,
-        "proof": best
+        "proof": best,
     }
 
     # append JSONL

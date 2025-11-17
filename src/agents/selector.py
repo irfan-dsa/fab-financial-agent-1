@@ -1,5 +1,6 @@
 ﻿import re
-from typing import List, Dict, Any
+from typing import Any, Dict, List
+
 
 def post_process_proofs_select_best(
     proofs: List[Dict[str, Any]],
@@ -7,11 +8,12 @@ def post_process_proofs_select_best(
     metric_key: str,
     top_n: int = 1,
     return_all: bool = False,
-    min_confidence: float = 0.45
+    min_confidence: float = 0.45,
 ) -> List[Dict[str, Any]]:
     """
     Deterministic scorer/selector.
     """
+
     def score_proof(p: Dict[str, Any]):
         reasons = []
         score = 0
@@ -44,7 +46,7 @@ def post_process_proofs_select_best(
         return int(score), round(float(confidence), 3), reasons
 
     scored = []
-    for p in (proofs or []):
+    for p in proofs or []:
         s, conf, reasons = score_proof(p)
         p2 = dict(p)
         p2["selection_score"] = max(0, s)
@@ -52,7 +54,10 @@ def post_process_proofs_select_best(
         p2["extraction_reason"] = reasons
         scored.append(p2)
 
-    scored.sort(key=lambda x: (x.get("selection_score", 0), x.get("value_millions", 0)), reverse=True)
+    scored.sort(
+        key=lambda x: (x.get("selection_score", 0), x.get("value_millions", 0)),
+        reverse=True,
+    )
 
     if return_all:
         return scored
@@ -63,4 +68,4 @@ def post_process_proofs_select_best(
     if scored[0]["confidence"] >= min_confidence:
         return scored[:top_n]
 
-    return scored[: max(1, top_n + 1) ]
+    return scored[: max(1, top_n + 1)]

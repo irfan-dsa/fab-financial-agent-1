@@ -1,9 +1,15 @@
 ﻿# src/agents/temporal_agent.py
 from __future__ import annotations
-from typing import Dict, Any, List, Tuple, Optional
-from utils.quarter_utils import normalize_quarter_label, parse_quarter_from_text
 
-def group_chunks_by_period(chunks: List[Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]]]:
+from typing import Any, Dict, List, Optional, Tuple
+
+from utils.quarter_utils import (normalize_quarter_label,
+                                 parse_quarter_from_text)
+
+
+def group_chunks_by_period(
+    chunks: List[Dict[str, Any]]
+) -> Dict[str, List[Dict[str, Any]]]:
     """
     Group parser chunks into period buckets based on metadata (file names, section, or explicit quarter text).
     Heuristic:
@@ -32,7 +38,10 @@ def group_chunks_by_period(chunks: List[Dict[str, Any]]) -> Dict[str, List[Dict[
         groups.setdefault(label, []).append(c)
     return groups
 
-def aggregate_metrics_by_period(extracted_metrics: List[Dict[str, Any]]) -> Dict[str, Dict[str, float]]:
+
+def aggregate_metrics_by_period(
+    extracted_metrics: List[Dict[str, Any]]
+) -> Dict[str, Dict[str, float]]:
     """
     From a flat list of ExtractedMetric objects (or dicts), create a period -> metric -> value map.
     Expects each metric to have metadata.chunk_id that contains period info or file name which includes year/quarter.
@@ -67,5 +76,7 @@ def aggregate_metrics_by_period(extracted_metrics: List[Dict[str, Any]]) -> Dict
             aggregated[period][metric] = value
         else:
             # choose value with larger absolute magnitude (heuristic)
-            aggregated[period][metric] = value if abs(value) >= abs(existing) else existing
+            aggregated[period][metric] = (
+                value if abs(value) >= abs(existing) else existing
+            )
     return aggregated

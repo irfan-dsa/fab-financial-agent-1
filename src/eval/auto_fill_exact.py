@@ -1,5 +1,8 @@
-﻿import sys, json, glob
+﻿import glob
+import json
+import sys
 from pathlib import Path
+
 sys.path.insert(0, "src")
 
 from agents import extractor_adapter_hybrid as h
@@ -22,7 +25,8 @@ if not MISSING_TSV.exists():
 existing = set()
 if GT_FILE.exists():
     for line in GT_FILE.read_text(encoding="utf-8").splitlines():
-        if not line.strip(): continue
+        if not line.strip():
+            continue
         try:
             j = json.loads(line)
             existing.add((j.get("file"), j.get("period"), j.get("metric")))
@@ -31,7 +35,7 @@ if GT_FILE.exists():
 
 for raw in MISSING_TSV.read_text(encoding="utf-8").splitlines():
     s = raw.strip()
-    if not s: 
+    if not s:
         continue
     # expecting "Q1_2024<tab>metric_key" or space-separated
     parts = s.split()
@@ -76,7 +80,9 @@ for raw in MISSING_TSV.read_text(encoding="utf-8").splitlines():
     # pick best via selector if available
     best = None
     try:
-        best_list = post_process_proofs_select_best(proofs, metric_key.replace("_"," "), metric_key, top_n=1, return_all=False)
+        best_list = post_process_proofs_select_best(
+            proofs, metric_key.replace("_", " "), metric_key, top_n=1, return_all=False
+        )
         if best_list:
             best = best_list[0]
     except Exception:
@@ -92,22 +98,17 @@ for raw in MISSING_TSV.read_text(encoding="utf-8").splitlines():
     # sanitize best to make JSON-serializable (strip callables etc)
     # (proof items are primitives; ensure no stray non-serializable)
     def sanitize(obj):
-        if isinstance(obj, (str,int,float,bool)) or obj is None:
+        if isinstance(obj, (str, int, float, bool)) or obj is None:
             return obj
         if isinstance(obj, dict):
-            return {k: sanitize(v) for k,v in obj.items()}
+            return {k: sanitize(v) for k, v in obj.items()}
         if isinstance(obj, list):
             return [sanitize(v) for v in obj]
         return str(obj)
 
     best_s = sanitize(best)
 
-    gt = {
-        "file": fname,
-        "period": period,
-        "metric": metric_key,
-        "proof": best_s
-    }
+    gt = {"file": fname, "period": period, "metric": metric_key, "proof": best_s}
 
     # append to ground truth
     try:

@@ -1,13 +1,17 @@
 ﻿# src/ingest/ingest.py
-from pathlib import Path
-from typing import List, Iterable
-import os
 import json
 import logging
-from sentence_transformers import SentenceTransformer
-from parsers.pdf_parser import parse_pdf_to_chunks, save_chunks_to_json, chunks_to_dataframe
-from vectorstore.qdrant_store import get_client, create_collection_if_not_exists, upsert_chunks
+import os
+from pathlib import Path
+from typing import Iterable, List
+
 from dotenv import load_dotenv
+from sentence_transformers import SentenceTransformer
+
+from parsers.pdf_parser import (chunks_to_dataframe, parse_pdf_to_chunks,
+                                save_chunks_to_json)
+from vectorstore.qdrant_store import (create_collection_if_not_exists,
+                                      get_client, upsert_chunks)
 
 # Load environment variables (prefer config/.env over config/.env.sample)
 env_path = Path("config") / ".env"
@@ -24,6 +28,7 @@ logging.basicConfig(level=logging.INFO)
 # Cache model to avoid reloading
 _model: SentenceTransformer | None = None
 
+
 def get_model(model_name: str = MODEL_NAME) -> SentenceTransformer:
     global _model
     if _model is None:
@@ -31,7 +36,10 @@ def get_model(model_name: str = MODEL_NAME) -> SentenceTransformer:
         _model = SentenceTransformer(model_name)
     return _model
 
-def embed_texts_batched(texts: List[str], batch_size: int = BATCH_SIZE, model_name: str = MODEL_NAME):
+
+def embed_texts_batched(
+    texts: List[str], batch_size: int = BATCH_SIZE, model_name: str = MODEL_NAME
+):
     """
     Yield embeddings in batches as lists of floats.
     """
@@ -45,6 +53,7 @@ def embed_texts_batched(texts: List[str], batch_size: int = BATCH_SIZE, model_na
         for vec in embs:
             embeddings.append(vec.tolist())
     return embeddings
+
 
 def ingest_pdf(filepath: str, push_to_qdrant: bool = True, out_dir: str = "data/out"):
     p = Path(filepath)
@@ -74,7 +83,9 @@ def ingest_pdf(filepath: str, push_to_qdrant: bool = True, out_dir: str = "data/
         if not texts:
             logger.warning("No text chunks found for %s", p)
         else:
-            logger.info("Computing embeddings for %d chunks (batch=%d)", len(texts), BATCH_SIZE)
+            logger.info(
+                "Computing embeddings for %d chunks (batch=%d)", len(texts), BATCH_SIZE
+            )
             embeddings = embed_texts_batched(texts, batch_size=BATCH_SIZE)
             # ensure collection exists with correct vector size
             if embeddings:

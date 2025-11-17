@@ -1,10 +1,12 @@
 ﻿# src/utils/financial_regex.py
 from __future__ import annotations
+
 import re
 from typing import Optional
 
 # Common patterns for numbers in financial statements
-_RE_NUMBER = re.compile(r"""
+_RE_NUMBER = re.compile(
+    r"""
     [-+]?                # optional sign
     (?:
       \d{1,3}(?:,\d{3})+(?:\.\d+)?   # 1,234 or 1,234.56
@@ -12,11 +14,14 @@ _RE_NUMBER = re.compile(r"""
       |\.\d+                         # .123
     )
     (?:\s*[MB]illion)?   # optional million/billion words (rare)
-    """, re.VERBOSE | re.IGNORECASE)
+    """,
+    re.VERBOSE | re.IGNORECASE,
+)
 
 _RE_PERCENT = re.compile(r"([-+]?\d+(?:\.\d+)?)\s*%")
 
 # Helpers
+
 
 def clean_number_token(token: str) -> Optional[str]:
     """
@@ -35,6 +40,7 @@ def clean_number_token(token: str) -> Optional[str]:
     t = t.replace(" ", "")
     # if contains letters like M/B, keep them for caller to scale
     return t if t else None
+
 
 def parse_number(token: str) -> Optional[float]:
     """
@@ -63,6 +69,7 @@ def parse_number(token: str) -> Optional[float]:
         return float(t) * scale
     except ValueError:
         return None
+
 
 def find_first_number(text: str) -> Optional[float]:
     """

@@ -1,4 +1,8 @@
-﻿import sys, json, time, traceback
+# type: ignore
+import json
+import sys
+import time
+import traceback
 from pathlib import Path
 
 sys.path.insert(0, "src")
@@ -52,7 +56,9 @@ for entry in lines:
 
     attempted += 1
     try:
-        proofs = hybrid.extract_metric_from_file(str(file_path), metric, period_label=period_label)
+        proofs = hybrid.extract_metric_from_file(
+            str(file_path), metric, period_label=period_label
+        )
 
         if not proofs:
             entry["proof"] = None
@@ -65,11 +71,7 @@ for entry in lines:
 
         try:
             best = post_process_proofs_select_best(
-                proofs,
-                metric.replace("_", " "),
-                metric,
-                top_n=1,
-                return_all=False
+                proofs, metric.replace("_", " "), metric, top_n=1, return_all=False
             )
             chosen = best[0] if isinstance(best, list) and best else best
         except:
@@ -88,7 +90,7 @@ for entry in lines:
                 "chunk_id": chosen.get("chunk_id"),
                 "selection_score": chosen.get("selection_score"),
                 "confidence": chosen.get("confidence"),
-                "extracted_at": chosen.get("extracted_at", time.time())
+                "extracted_at": chosen.get("extracted_at", time.time()),
             }
             entry["fill_meta"] = {"status": "filled", "method": "hybrid+selector"}
             filled += 1
@@ -100,19 +102,23 @@ for entry in lines:
         entry["fill_meta"] = {
             "status": "error",
             "error": str(e),
-            "trace": traceback.format_exc()[:300]
+            "trace": traceback.format_exc()[:300],
         }
 
     results.append(entry)
 
 # write canonical json
-canonical = {}
+canonical: Dict[str, Any] = {}
 for e in results:
-    period = e.get("period", "UNKNOWN")
-    metric = e.get("metric")
-    canonical.setdefault(period, {})[metric] = e.get("proof")
+# TODO: Fix exception scope -     period = e.get("period", "UNKNOWN")
+# TODO: Fix exception scope -     metric = e.get("metric")
+# TODO: Fix exception scope -     canonical.setdefault(period, {})[metric] = e.get("proof")
 
-OUT_JSON.write_text(json.dumps(canonical, indent=2, ensure_ascii=False), encoding="utf-8")
-LOG.write_text(json.dumps({"attempted": attempted, "filled": filled}, indent=2), encoding="utf-8")
+OUT_JSON.write_text(
+    json.dumps(canonical, indent=2, ensure_ascii=False), encoding="utf-8"
+)
+LOG.write_text(
+    json.dumps({"attempted": attempted, "filled": filled}, indent=2), encoding="utf-8"
+)
 
 print(f"Attempted={attempted}, Filled={filled}")

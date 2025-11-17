@@ -1,10 +1,13 @@
-﻿# src/utils/quarter_utils.py
+# type: ignore
+# src/utils/quarter_utils.py
 from __future__ import annotations
+
 import re
 from typing import Optional, Tuple
 
 _QUARTER_RE = re.compile(r"(Q[1-4])\s*[^\d\s]*\s*(\d{4})", re.IGNORECASE)
 _YEAR_ONLY_RE = re.compile(r"\b(20\d{2})\b")
+
 
 def parse_quarter_from_text(text: str) -> Optional[Tuple[str, int]]:
     """
@@ -25,6 +28,7 @@ def parse_quarter_from_text(text: str) -> Optional[Tuple[str, int]]:
     if ym:
         return (None, int(ym.group(1)))
     return None
+
 
 def normalize_quarter_label(q: Optional[str], y: int) -> str:
     """Return normalized label like '2024-Q3' given quarter string and year."""

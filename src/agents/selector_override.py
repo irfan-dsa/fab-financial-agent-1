@@ -1,13 +1,23 @@
-﻿from typing import List, Dict, Any
+﻿from typing import Any, Dict, List
+
 from agents.selector import post_process_proofs_select_best
 
-def select_best_with_phrase_boost(proofs: List[Dict[str,Any]], canonical_phrase: str, metric_key: str, top_n: int = 1, return_all: bool = False):
+
+def select_best_with_phrase_boost(
+    proofs: List[Dict[str, Any]],
+    canonical_phrase: str,
+    metric_key: str,
+    top_n: int = 1,
+    return_all: bool = False,
+):
     # Get baseline scored items
     try:
         scored = post_process_proofs_select_best(
-            proofs, canonical_phrase, metric_key,
+            proofs,
+            canonical_phrase,
+            metric_key,
             top_n=max(top_n, len(proofs)),
-            return_all=True
+            return_all=True,
         )
     except Exception:
         scored = []
@@ -33,7 +43,11 @@ def select_best_with_phrase_boost(proofs: List[Dict[str,Any]], canonical_phrase:
             reasons.append("startswith_canonical")
 
         # numeric token heuristic
-        nums = [t for t in raw.replace("(", " ").replace(")", " ").split() if any(c.isdigit() for c in t)]
+        nums = [
+            t
+            for t in raw.replace("(", " ").replace(")", " ").split()
+            if any(c.isdigit() for c in t)
+        ]
         if len(nums) >= 1:
             boost += 5
             reasons.append(f"nums={len(nums)}")
@@ -46,4 +60,4 @@ def select_best_with_phrase_boost(proofs: List[Dict[str,Any]], canonical_phrase:
 
     if return_all:
         return scored
-    return scored[:max(1, top_n)]
+    return scored[: max(1, top_n)]

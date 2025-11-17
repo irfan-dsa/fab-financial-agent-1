@@ -1,15 +1,17 @@
 ﻿# src/utils/proof_utils.py
 from __future__ import annotations
+
+import hashlib
+import json
 import re
-from typing import Dict, Any, Optional
+import time
 from decimal import Decimal
 from pathlib import Path
-import json
-import hashlib
-import time
+from typing import Any, Dict, Optional
 
 # Match numeric groups like "3", "3,261,682", "2023"
 NUM_RE = re.compile(r"([0-9][0-9,]*)")
+
 
 def parse_int_from_text(s: str) -> Optional[int]:
     """
@@ -48,8 +50,10 @@ def parse_int_from_text(s: str) -> Optional[int]:
     except Exception:
         return None
 
+
 def thousands_to_millions(n_thousands: int) -> float:
     return float(Decimal(n_thousands) / Decimal(1000))
+
 
 def compute_sha256(filepath: str) -> str:
     p = Path(filepath)
@@ -60,6 +64,7 @@ def compute_sha256(filepath: str) -> str:
         for chunk in iter(lambda: fh.read(8192), b""):
             h.update(chunk)
     return h.hexdigest()
+
 
 def build_proof_object(
     metric: str,
@@ -93,11 +98,14 @@ def build_proof_object(
         "chunk_id": chunk_id,
         "extraction_regex": extraction_regex,
         "file_sha256": sha256,
-        "extracted_at": now_ts
+        "extracted_at": now_ts,
     }
     return proof
 
-def persist_proof(proof: Dict[str, Any], out_path: str = "data/out/metrics.jsonl") -> None:
+
+def persist_proof(
+    proof: Dict[str, Any], out_path: str = "data/out/metrics.jsonl"
+) -> None:
     p = Path(out_path)
     p.parent.mkdir(parents=True, exist_ok=True)
     with p.open("a", encoding="utf-8") as fh:

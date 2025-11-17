@@ -2,6 +2,7 @@
 import json
 from pathlib import Path
 
+
 def create_test_queries():
     """
     Generate 25 test queries covering all required categories:
@@ -11,7 +12,7 @@ def create_test_queries():
     - Temporal comparison (5 queries)
     - Out-of-scope (5 queries)
     """
-    
+
     queries = [
         # SIMPLE FACTUAL QUERIES (Single document)
         {
@@ -24,10 +25,10 @@ def create_test_queries():
                 "expected_value": 3456000000,
                 "expected_unit": "AED",
                 "source_required": True,
-                "page_reference": True
+                "page_reference": True,
             },
             "difficulty": "easy",
-            "expected_steps": 1
+            "expected_steps": 1,
         },
         {
             "id": 2,
@@ -38,10 +39,10 @@ def create_test_queries():
                 "period": "Q1_2024",
                 "expected_value": 89000000000,
                 "expected_unit": "AED",
-                "source_required": True
+                "source_required": True,
             },
             "difficulty": "easy",
-            "expected_steps": 1
+            "expected_steps": 1,
         },
         {
             "id": 3,
@@ -52,10 +53,10 @@ def create_test_queries():
                 "period": "Q2_2024",
                 "expected_value": 8900000000,
                 "expected_unit": "AED",
-                "source_required": True
+                "source_required": True,
             },
             "difficulty": "easy",
-            "expected_steps": 1
+            "expected_steps": 1,
         },
         {
             "id": 4,
@@ -66,10 +67,10 @@ def create_test_queries():
                 "period": "Q1_2025",
                 "expected_value": 456000000000,
                 "expected_unit": "AED",
-                "source_required": True
+                "source_required": True,
             },
             "difficulty": "easy",
-            "expected_steps": 1
+            "expected_steps": 1,
         },
         {
             "id": 5,
@@ -80,12 +81,11 @@ def create_test_queries():
                 "period": "Q2_2023",
                 "expected_value": 7800000000,
                 "expected_unit": "AED",
-                "source_required": True
+                "source_required": True,
             },
             "difficulty": "easy",
-            "expected_steps": 1
+            "expected_steps": 1,
         },
-        
         # CALCULATION-HEAVY QUERIES
         {
             "id": 6,
@@ -95,15 +95,15 @@ def create_test_queries():
                 "calculation": "ROE = (Net Profit / Shareholders Equity) * 100",
                 "inputs": {
                     "net_profit": 3456000000,
-                    "shareholders_equity": 87000000000
+                    "shareholders_equity": 87000000000,
                 },
                 "expected_value": 3.97,
                 "expected_unit": "%",
                 "tolerance": 0.1,
-                "tool_required": "calculator"
+                "tool_required": "calculator",
             },
             "difficulty": "medium",
-            "expected_steps": 3
+            "expected_steps": 3,
         },
         {
             "id": 7,
@@ -113,15 +113,15 @@ def create_test_queries():
                 "calculation": "LDR = Total Loans / Customer Deposits",
                 "inputs": {
                     "total_loans": 389000000000,
-                    "customer_deposits": 445000000000
+                    "customer_deposits": 445000000000,
                 },
                 "expected_value": 0.874,
                 "expected_unit": "ratio",
                 "tolerance": 0.01,
-                "tool_required": "calculator"
+                "tool_required": "calculator",
             },
             "difficulty": "medium",
-            "expected_steps": 3
+            "expected_steps": 3,
         },
         {
             "id": 8,
@@ -131,15 +131,15 @@ def create_test_queries():
                 "calculation": "YoY = ((Q2_2024 - Q2_2023) / Q2_2023) * 100",
                 "inputs": {
                     "q2_2023_net_profit": 3200000000,
-                    "q2_2024_net_profit": 3700000000
+                    "q2_2024_net_profit": 3700000000,
                 },
                 "expected_value": 15.625,
                 "expected_unit": "%",
                 "tolerance": 0.5,
-                "tool_required": "calculator"
+                "tool_required": "calculator",
             },
             "difficulty": "medium",
-            "expected_steps": 4
+            "expected_steps": 4,
         },
         {
             "id": 9,
@@ -147,17 +147,14 @@ def create_test_queries():
             "query": "What is FAB's Return on Assets (ROA) for Q1 2025?",
             "ground_truth": {
                 "calculation": "ROA = (Net Profit / Total Assets) * 100",
-                "inputs": {
-                    "net_profit": 4100000000,
-                    "total_assets": 1123000000000
-                },
+                "inputs": {"net_profit": 4100000000, "total_assets": 1123000000000},
                 "expected_value": 0.365,
                 "expected_unit": "%",
                 "tolerance": 0.05,
-                "tool_required": "calculator"
+                "tool_required": "calculator",
             },
             "difficulty": "medium",
-            "expected_steps": 3
+            "expected_steps": 3,
         },
         {
             "id": 10,
@@ -165,19 +162,15 @@ def create_test_queries():
             "query": "Calculate the cost-to-income ratio for Q3 2023",
             "ground_truth": {
                 "calculation": "C/I = (Operating Expenses / Revenue) * 100",
-                "inputs": {
-                    "operating_expenses": 2500000000,
-                    "revenue": 8500000000
-                },
+                "inputs": {"operating_expenses": 2500000000, "revenue": 8500000000},
                 "expected_value": 29.41,
                 "expected_unit": "%",
                 "tolerance": 0.5,
-                "tool_required": "calculator"
+                "tool_required": "calculator",
             },
             "difficulty": "medium",
-            "expected_steps": 3
+            "expected_steps": 3,
         },
-        
         # MULTI-HOP REASONING QUERIES
         {
             "id": 11,
@@ -193,11 +186,11 @@ def create_test_queries():
                     "Extract net profit Q1 2024",
                     "Calculate or extract ROE for both",
                     "Compare metrics",
-                    "Provide conclusion"
-                ]
+                    "Provide conclusion",
+                ],
             },
             "difficulty": "hard",
-            "expected_steps": 5
+            "expected_steps": 5,
         },
         {
             "id": 12,
@@ -205,7 +198,11 @@ def create_test_queries():
             "query": "How has FAB's lending capacity evolved from Q2 2023 to Q1 2025? Consider both total loans and loan-to-deposit ratio.",
             "ground_truth": {
                 "requires_multiple_documents": True,
-                "metrics_needed": ["total_loans", "customer_deposits", "loan_to_deposit_ratio"],
+                "metrics_needed": [
+                    "total_loans",
+                    "customer_deposits",
+                    "loan_to_deposit_ratio",
+                ],
                 "periods": ["Q2_2023", "Q1_2025"],
                 "expected_analysis": "trend analysis with numerical support",
                 "reasoning_steps": [
@@ -214,11 +211,11 @@ def create_test_queries():
                     "Extract loans Q1 2025",
                     "Extract deposits Q1 2025",
                     "Calculate LDR for both periods",
-                    "Analyze trend"
-                ]
+                    "Analyze trend",
+                ],
             },
             "difficulty": "hard",
-            "expected_steps": 6
+            "expected_steps": 6,
         },
         {
             "id": 13,
@@ -234,11 +231,11 @@ def create_test_queries():
                     "Extract operating profit for all 3 periods",
                     "Calculate profit margins",
                     "Analyze correlation",
-                    "Provide insights"
-                ]
+                    "Provide insights",
+                ],
             },
             "difficulty": "hard",
-            "expected_steps": 7
+            "expected_steps": 7,
         },
         {
             "id": 14,
@@ -255,11 +252,11 @@ def create_test_queries():
                     "Calculate ROE Q1 2024",
                     "Calculate ROA Q1 2024",
                     "Compare trends",
-                    "Interpret capital efficiency"
-                ]
+                    "Interpret capital efficiency",
+                ],
             },
             "difficulty": "hard",
-            "expected_steps": 6
+            "expected_steps": 6,
         },
         {
             "id": 15,
@@ -267,7 +264,12 @@ def create_test_queries():
             "query": "Has FAB's operational efficiency improved between Q2 2023 and Q2 2024? Consider revenue, operating expenses, and profitability.",
             "ground_truth": {
                 "requires_multiple_documents": True,
-                "metrics_needed": ["revenue", "operating_expenses", "operating_profit", "net_profit"],
+                "metrics_needed": [
+                    "revenue",
+                    "operating_expenses",
+                    "operating_profit",
+                    "net_profit",
+                ],
                 "periods": ["Q2_2023", "Q2_2024"],
                 "expected_analysis": "efficiency improvement assessment",
                 "reasoning_steps": [
@@ -275,13 +277,12 @@ def create_test_queries():
                     "Extract all metrics Q2 2024",
                     "Calculate efficiency ratios",
                     "Compare year-over-year",
-                    "Conclude improvement/decline"
-                ]
+                    "Conclude improvement/decline",
+                ],
             },
             "difficulty": "hard",
-            "expected_steps": 6
+            "expected_steps": 6,
         },
-        
         # TEMPORAL COMPARISON QUERIES
         {
             "id": 16,
@@ -291,10 +292,10 @@ def create_test_queries():
                 "periods": ["Q2_2023", "Q3_2023", "Q1_2024", "Q2_2024", "Q1_2025"],
                 "metric": "net_profit",
                 "expected_output": "chronological trend with values",
-                "visualization_recommended": True
+                "visualization_recommended": True,
             },
             "difficulty": "medium",
-            "expected_steps": 5
+            "expected_steps": 5,
         },
         {
             "id": 17,
@@ -304,10 +305,10 @@ def create_test_queries():
                 "periods": ["Q3_2023", "Q1_2024", "Q1_2025"],
                 "metric": "roe",
                 "calculation_required": True,
-                "expected_output": "ranking with values"
+                "expected_output": "ranking with values",
             },
             "difficulty": "medium",
-            "expected_steps": 4
+            "expected_steps": 4,
         },
         {
             "id": 18,
@@ -317,10 +318,10 @@ def create_test_queries():
                 "periods": ["Q2_2023", "Q1_2025"],
                 "metric": "customer_deposits",
                 "calculation": "absolute and percentage change",
-                "expected_output": "growth rate and absolute change"
+                "expected_output": "growth rate and absolute change",
             },
             "difficulty": "medium",
-            "expected_steps": 4
+            "expected_steps": 4,
         },
         {
             "id": 19,
@@ -329,10 +330,10 @@ def create_test_queries():
             "ground_truth": {
                 "periods": ["Q2_2023", "Q3_2023", "Q1_2024", "Q2_2024"],
                 "metric": "operating_profit",
-                "expected_output": "quarter-by-quarter comparison"
+                "expected_output": "quarter-by-quarter comparison",
             },
             "difficulty": "medium",
-            "expected_steps": 4
+            "expected_steps": 4,
         },
         {
             "id": 20,
@@ -343,12 +344,11 @@ def create_test_queries():
                 "periods_2024": ["Q1_2024", "Q2_2024"],
                 "metric": "net_profit",
                 "calculation": "average by year",
-                "expected_output": "two averages with comparison"
+                "expected_output": "two averages with comparison",
             },
             "difficulty": "medium",
-            "expected_steps": 5
+            "expected_steps": 5,
         },
-        
         # OUT-OF-SCOPE QUERIES (Should refuse/clarify)
         {
             "id": 21,
@@ -357,10 +357,10 @@ def create_test_queries():
             "ground_truth": {
                 "expected_behavior": "refuse_future_prediction",
                 "reason": "Future prediction not possible with historical data",
-                "suggested_response": "Cannot predict future quarters. Can analyze historical trends."
+                "suggested_response": "Cannot predict future quarters. Can analyze historical trends.",
             },
             "difficulty": "n/a",
-            "expected_steps": 1
+            "expected_steps": 1,
         },
         {
             "id": 22,
@@ -369,10 +369,10 @@ def create_test_queries():
             "ground_truth": {
                 "expected_behavior": "refuse_external_comparison",
                 "reason": "No data available for other banks",
-                "suggested_response": "Only FAB data available. Cannot compare with other banks."
+                "suggested_response": "Only FAB data available. Cannot compare with other banks.",
             },
             "difficulty": "n/a",
-            "expected_steps": 1
+            "expected_steps": 1,
         },
         {
             "id": 23,
@@ -381,10 +381,10 @@ def create_test_queries():
             "ground_truth": {
                 "expected_behavior": "refuse_opinion_speculation",
                 "reason": "Opinion/subjective content not in financial statements",
-                "suggested_response": "Financial statements don't contain CEO opinions on this topic."
+                "suggested_response": "Financial statements don't contain CEO opinions on this topic.",
             },
             "difficulty": "n/a",
-            "expected_steps": 1
+            "expected_steps": 1,
         },
         {
             "id": 24,
@@ -393,10 +393,10 @@ def create_test_queries():
             "ground_truth": {
                 "expected_behavior": "refuse_investment_advice",
                 "reason": "Cannot provide investment advice",
-                "suggested_response": "Cannot provide investment advice. Can only present financial data."
+                "suggested_response": "Cannot provide investment advice. Can only present financial data.",
             },
             "difficulty": "n/a",
-            "expected_steps": 1
+            "expected_steps": 1,
         },
         {
             "id": 25,
@@ -405,46 +405,57 @@ def create_test_queries():
             "ground_truth": {
                 "expected_behavior": "ask_clarification",
                 "reason": "Missing time period specification",
-                "suggested_response": "Please specify which quarter/year (e.g., Q3 2023, Q1 2024)"
+                "suggested_response": "Please specify which quarter/year (e.g., Q3 2023, Q1 2024)",
             },
             "difficulty": "n/a",
-            "expected_steps": 1
-        }
+            "expected_steps": 1,
+        },
     ]
-    
+
     # Save to file
     output_path = Path("data/ground_truth/test_queries.json")
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    
-    with open(output_path, 'w') as f:
-        json.dump({
-            "metadata": {
-                "total_queries": len(queries),
-                "categories": {
-                    "simple_factual": 5,
-                    "calculation": 5,
-                    "multi_hop": 5,
-                    "temporal": 5,
-                    "out_of_scope": 5
+
+    with open(output_path, "w") as f:
+        json.dump(
+            {
+                "metadata": {
+                    "total_queries": len(queries),
+                    "categories": {
+                        "simple_factual": 5,
+                        "calculation": 5,
+                        "multi_hop": 5,
+                        "temporal": 5,
+                        "out_of_scope": 5,
+                    },
+                    "difficulty_distribution": {
+                        "easy": 5,
+                        "medium": 10,
+                        "hard": 5,
+                        "n/a": 5,
+                    },
                 },
-                "difficulty_distribution": {
-                    "easy": 5,
-                    "medium": 10,
-                    "hard": 5,
-                    "n/a": 5
-                }
+                "queries": queries,
             },
-            "queries": queries
-        }, f, indent=2)
-    
+            f,
+            indent=2,
+        )
+
     print(f"✅ Created {len(queries)} test queries")
     print(f"📁 Saved to: {output_path}")
     print(f"\nCategory breakdown:")
-    for cat in ["simple_factual", "calculation", "multi_hop", "temporal", "out_of_scope"]:
+    for cat in [
+        "simple_factual",
+        "calculation",
+        "multi_hop",
+        "temporal",
+        "out_of_scope",
+    ]:
         count = len([q for q in queries if q["category"] == cat])
         print(f"  - {cat}: {count}")
-    
+
     return queries
+
 
 if __name__ == "__main__":
     create_test_queries()

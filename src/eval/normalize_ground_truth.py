@@ -7,10 +7,12 @@ OUT_DIR = Path("data/ground_truth")
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 OUT_FILE = OUT_DIR / "financial_metrics.json"
 
+
 def load_lines(path):
     with path.open("r", encoding="utf-8") as fh:
         for line in fh:
             yield json.loads(line)
+
 
 def normalize():
     out = {}
@@ -29,6 +31,7 @@ def normalize():
     with OUT_FILE.open("w", encoding="utf-8") as fh:
         json.dump(out, fh, indent=2, ensure_ascii=False)
     print("Wrote canonical ground truth to:", OUT_FILE)
+
 
 if __name__ == "__main__":
     normalize()

@@ -1,9 +1,10 @@
 ﻿"""
 Pytest configuration and shared fixtures for FAB Financial Agent tests.
 """
-import pytest
 import sys
 from pathlib import Path
+
+import pytest
 
 # Add src directory to path for imports
 src_path = Path(__file__).parent.parent

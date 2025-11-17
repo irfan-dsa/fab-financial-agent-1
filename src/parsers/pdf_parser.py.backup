@@ -1,0 +1,87 @@
+"""
+PDF Parser for FAB Financial Statements - FIXED VERSION
+"""
+import re
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Dict, List, Optional
+
+import fitz  # PyMuPDF
+
+
+@dataclass
+class ParsedDocument:
+    """Complete parsed financial document."""
+
+    filename: str
+    quarter: str
+    year: int
+    report_type: str
+    sections: Dict[str, str]
+    metadata: Dict[str, any]
+
+
+class FABPDFParser:
+    """Parser for FAB financial statement PDFs."""
+
+    def __init__(self, pdf_path: str):
+        self.pdf_path = Path(pdf_path)
+        try:
+            self.doc = fitz.open(pdf_path)
+        except Exception as e:
+            raise Exception(f"Failed to open PDF: {e}")
+        self.metadata = self._extract_metadata()
+
+    def _extract_metadata(self) -> Dict[str, any]:
+        """Extract quarter, year from filename."""
+        filename = self.pdf_path.stem
+
+        quarter_match = re.search(r"Q(\d)", filename, re.IGNORECASE)
+        year_match = re.search(r"(\d{4})", filename)
+
+        quarter = f"Q{quarter_match.group(1)}" if quarter_match else "Unknown"
+        year = int(year_match.group(1)) if year_match else None
+
+        report_type = "financial_statement" if "FS" in filename else "unknown"
+
+        return {
+            "filename": self.pdf_path.name,
+            "quarter": quarter,
+            "year": year,
+            "report_type": report_type,
+            "total_pages": len(self.doc),
+        }
+
+    def parse(self) -> ParsedDocument:
+        """Parse entire document."""
+        sections = {}
+
+        for page_num in range(len(self.doc)):
+            try:
+                page = self.doc[page_num]
+                text = page.get_text()
+
+                # Store with actual page number
+                sections[f"page_{page_num}"] = text
+
+            except Exception as e:
+                print(f"    Warning: Error reading page {page_num}: {e}")
+                continue
+
+        return ParsedDocument(
+            filename=self.metadata["filename"],
+            quarter=self.metadata["quarter"],
+            year=self.metadata["year"],
+            report_type=self.metadata["report_type"],
+            sections=sections,
+            metadata=self.metadata,
+        )
+
+    def close(self):
+        self.doc.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()

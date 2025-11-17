@@ -20,10 +20,12 @@ REQUIRED_METRICS = [
     "shareholder_equity",
 ]
 
+
 def load_gt():
     if not GT_FILE.exists():
         raise FileNotFoundError(GT_FILE)
     return json.loads(GT_FILE.read_text(encoding="utf-8"))
+
 
 def validate(gt):
     report = {"periods": {}, "summary": {"period_count": 0, "missing": 0, "invalid": 0}}
@@ -44,15 +46,19 @@ def validate(gt):
     report["summary"]["period_count"] = len(gt)
     return report
 
+
 def main():
     gt = load_gt()
     report = validate(gt)
-    REPORT_FILE.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
+    REPORT_FILE.write_text(
+        json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
     print("Validation report written to:", REPORT_FILE)
     # print short summary
     print("Periods:", report["summary"]["period_count"])
     print("Missing metrics:", report["summary"]["missing"])
     print("Invalid values:", report["summary"]["invalid"])
+
 
 if __name__ == "__main__":
     main()

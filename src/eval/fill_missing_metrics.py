@@ -1,8 +1,8 @@
 ﻿# src/eval/fill_missing_metrics.py
-import json
-from pathlib import Path
 import glob
+import json
 import re
+from pathlib import Path
 from typing import Optional
 
 try:
@@ -29,6 +29,7 @@ REQUIRED_METRICS = [
     "shareholder_equity",
 ]
 
+
 def guess_file_for_period(period_key: str) -> Optional[str]:
     qy = period_key.replace("_", " ")
     candidates = glob.glob("data/raw/*.pdf")
@@ -37,6 +38,7 @@ def guess_file_for_period(period_key: str) -> Optional[str]:
         if re.search(rf"{qy.replace(' ', '.*')}", name, re.IGNORECASE):
             return c
     return candidates[0] if candidates else None
+
 
 def main():
     if not GT_PATH.exists():
@@ -50,7 +52,8 @@ def main():
             gt[period_key] = metrics
 
         candidate_files = [
-            v.get("source_file") for v in metrics.values()
+            v.get("source_file")
+            for v in metrics.values()
             if isinstance(v, dict) and v.get("source_file")
         ]
         default_file = candidate_files[0] if candidate_files else None
@@ -64,44 +67,45 @@ def main():
 
             file_path = default_file or guess_file_for_period(period_key)
             if not file_path:
-                report["still_missing"].append({
-                    "period": period_key,
-                    "metric": metric,
-                    "reason": "no_file_found"
-                })
+                report["still_missing"].append(
+                    {"period": period_key, "metric": metric, "reason": "no_file_found"}
+                )
                 continue
 
             try:
                 proofs = extract_metric_from_file(file_path, metric, period_label=None)
             except Exception as ex:
-                report["still_missing"].append({
-                    "period": period_key,
-                    "metric": metric,
-                    "reason": f"extract_error: {ex}"
-                })
+                report["still_missing"].append(
+                    {
+                        "period": period_key,
+                        "metric": metric,
+                        "reason": f"extract_error: {ex}",
+                    }
+                )
                 continue
 
             if proofs:
                 best = proofs[0]
                 gt[period_key][metric] = best
-                report["filled"].append({
-                    "period": period_key,
-                    "metric": metric,
-                    "file": file_path
-                })
+                report["filled"].append(
+                    {"period": period_key, "metric": metric, "file": file_path}
+                )
             else:
-                report["still_missing"].append({
-                    "period": period_key,
-                    "metric": metric,
-                    "reason": "no_proof_found"
-                })
+                report["still_missing"].append(
+                    {"period": period_key, "metric": metric, "reason": "no_proof_found"}
+                )
 
     OUT_PATH.write_text(json.dumps(gt, indent=2, ensure_ascii=False), encoding="utf-8")
-    REPORT_PATH.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
+    REPORT_PATH.write_text(
+        json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
 
     print(f"Updated ground truth written to: {OUT_PATH}")
     print(f"Fill report written to: {REPORT_PATH}")
-    print(f"Filled: {len(report['filled'])}, Still missing: {len(report['still_missing'])}, Attempts: {report['attempts']}")
+    print(
+        f"Filled: {len(report['filled'])}, Still missing: {len(report['still_missing'])}, Attempts: {report['attempts']}"
+    )
+
 
 if __name__ == "__main__":
     main()
