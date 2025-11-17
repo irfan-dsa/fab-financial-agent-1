@@ -1,0 +1,102 @@
+﻿# src/agents/extractor_adapter.py
+import re
+import logging
+from pathlib import Path
+from typing import List, Dict, Any, Optional
+import pdfplumber
+from utils.proof_utils import build_proof_object, persist_proof
+
+FALLBACK_KEYWORDS = {
+    "net_profit": [r"net profit", r"profit for the period", r"profit attributable", r"profit for the year"],
+    "net_interest_income": [r"net interest income", r"net interest", r"interest income"],
+    "total_assets": [r"total assets", r"assets"],
+    "total_loans": [r"total loans", r"loans"],
+    "customer_deposits": [r"deposits", r"customer deposits"],
+    "shareholder_equity": [r"shareholders' equity", r"shareholder equity", r"equity attributable"]
+}
+
+NUM_CAND_RE = re.compile(r"([0-9]{1,3}(?:,[0-9]{3})+|[0-9]{5,})")  # comma-separated groups or 5+ digits       
+
+def _page_scan_fallback(file_path: str, metric: str, max_pages: int = None, require_keyword: bool = True):
+    """
+    Scan PDF pages directly for numeric candidates for `metric`.
+    Returns a list of proof objects (may be empty).
+    """
+    p = Path(file_path)
+    proofs = []
+    keywords = FALLBACK_KEYWORDS.get(metric, [metric.replace("_", " ")])
+
+    try:
+        with pdfplumber.open(str(p)) as doc:
+            pages_to_scan = range(len(doc)) if max_pages is None else range(min(len(doc), max_pages))
+            for i in pages_to_scan:
+                page = doc.pages[i]
+                # guarded extraction: pdfplumber sometimes raises on certain pages
+                try:
+                    text = page.extract_text() or ""
+                except Exception as e:
+                    logging.warning(f"pdfplumber.extract_text failed for {file_path} page {i+1}: {e}; trying fallbacks")
+                    # try fallback tolerances
+                    try:
+                        text = page.extract_text(x_tolerance=1, y_tolerance=1) or ""
+                    except Exception:
+                        try:
+                            text = page.extract_text(x_tolerance=2, y_tolerance=2) or ""
+                        except Exception as e2:
+                            logging.warning(f"All pdfplumber text extraction fallbacks failed for {file_path} page {i+1}: {e2}")
+                            # skip this page
+                            continue
+
+                if not text.strip():
+                    continue
+                lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+
+                # quick filter: if require_keyword and no keyword on page, skip
+                if require_keyword:
+                    lower = text.lower()
+                    if not any(re.search(kw, lower, re.IGNORECASE) for kw in keywords):
+                        continue
+
+                # scan lines for numeric candidates
+                candidate_lines = []
+                for li, line in enumerate(lines):
+                    if NUM_CAND_RE.search(line):
+                        # prefer lines containing any keyword near the number
+                        context = " ".join(lines[max(0, li-2): li+3]).lower()
+                        score = 0
+                        if any(re.search(kw, line, re.IGNORECASE) for kw in keywords):
+                            score += 2
+                        if any(re.search(kw, context, re.IGNORECASE) for kw in keywords):
+                            score += 1
+                        m = NUM_CAND_RE.search(line)
+                        numstr = m.group(1)
+                        # length bonus
+                        score += len(numstr.replace(",", ""))
+                        candidate_lines.append((score, line, i+1))  # page is 1-indexed
+
+                # sort candidates by score desc
+                candidate_lines.sort(key=lambda x: x[0], reverse=True)
+                for score, line, page_no in candidate_lines[:3]:
+                    try:
+                        proof = build_proof_object(
+                            metric=metric,
+                            raw_line=line,
+                            file=str(p),
+                            page=page_no,
+                            chunk_id=f"{p.name}::p{page_no}",
+                            extraction_regex=None,
+                            unit_hint="AED'000"
+                        )
+                        proofs.append(proof)
+                        # persist for audit
+                        persist_proof(proof)
+                    except Exception:
+                        continue
+
+                # if we found proofs on this page and require_keyword True, return early (high confidence)
+                if proofs and require_keyword:
+                    return proofs
+    except Exception as e:
+        logging.warning(f"Failed to open/process PDF {file_path}: {e}")
+
+    return proofs

@@ -1,0 +1,36 @@
+{
+  "filled": [
+    {
+      "period": "Q1_2024",
+      "metric": "net_fee_and_commission_income",
+      "file": "data\\raw\\FAB-FS-Q1-2024-English.pdf"
+    },
+    {
+      "period": "Q1_2025",
+      "metric": "net_fee_and_commission_income",
+      "file": "data\\raw\\FAB-FS-Q1-2025-English.pdf"
+    },
+    {
+      "period": "Q2_2023",
+      "metric": "net_fee_and_commission_income",
+      "file": "data\\raw\\FAB-FS-Q2-2023-English.pdf"
+    },
+    {
+      "period": "Q2_2024",
+      "metric": "net_fee_and_commission_income",
+      "file": "data\\raw\\FAB-FS-Q2-2024-English.pdf"
+    },
+    {
+      "period": "Q3_2023",
+      "metric": "net_fee_and_commission_income",
+      "file": "data\\raw\\FAB-FS-Q3-2023-English.pdf"
+    },
+    {
+      "period": "Q3_2023",
+      "metric": "shareholder_equity",
+      "file": "data\\raw\\FAB-FS-Q3-2023-English.pdf"
+    }
+  ],
+  "still_missing": [],
+  "attempts": 6
+}

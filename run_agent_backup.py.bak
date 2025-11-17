@@ -1,0 +1,338 @@
+﻿"""
+LangGraph Multi-Agent Workflow for FAB Financial Analysis
+"""
+import sys
+sys.path.insert(0, "src")
+
+from typing import TypedDict, Annotated, List, Dict, Any
+from langgraph.graph import StateGraph, END
+from qdrant_client import QdrantClient
+from sentence_transformers import SentenceTransformer
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
+# Import agents - using only what exists
+from agents.calculator_agent import yoy_change, ProofObject
+try:
+    from agents.extraction_agent import extract_metrics_from_chunks
+except ImportError:
+    print("Warning: extraction_agent functions not found, using fallback")
+    def extract_metrics_from_chunks(chunks):
+        return {}
+
+
+class AgentState(TypedDict):
+    """State that flows through the agent workflow."""
+    query: str
+    plan: Dict[str, Any]
+    retrieved_chunks: List[Dict]
+    extracted_metrics: Dict[str, Any]
+    calculations: Dict[str, Any]
+    final_answer: str
+    sources: List[str]
+    confidence: float
+
+
+class FABFinancialAgent:
+    """Main orchestrator for financial analysis queries."""
+    
+    def __init__(self):
+        # Initialize vector store
+        self.vector_client = QdrantClient(path="data/vectorstore")
+        self.encoder = SentenceTransformer("all-MiniLM-L6-v2")
+        
+        # Build workflow graph
+        self.workflow = self._build_workflow()
+        
+    def _build_workflow(self) -> StateGraph:
+        """Build the LangGraph workflow."""
+        workflow = StateGraph(AgentState)
+        
+        # Add nodes
+        workflow.add_node("plan", self.plan_query)
+        workflow.add_node("retrieve", self.retrieve_data)
+        workflow.add_node("extract", self.extract_metrics)
+        workflow.add_node("calculate", self.calculate_results)
+        workflow.add_node("synthesize", self.synthesize_answer)
+        
+        # Add edges
+        workflow.set_entry_point("plan")
+        workflow.add_edge("plan", "retrieve")
+        workflow.add_edge("retrieve", "extract")
+        workflow.add_edge("extract", "calculate")
+        workflow.add_edge("calculate", "synthesize")
+        workflow.add_edge("synthesize", END)
+        
+        return workflow.compile()
+    
+    def plan_query(self, state: AgentState) -> AgentState:
+        """Step 1: Understand query and create execution plan."""
+        query = state["query"]
+        
+        print(f"\n[PLANNING] Analyzing query: {query}")
+        
+        # Simple rule-based planning
+        plan = {
+            "needs_calculation": any(word in query.lower() for word in ["calculate", "growth", "change", "ratio", "roe", "percent"]),
+            "needs_comparison": any(word in query.lower() for word in ["vs", "versus", "compare", "between"]),
+            "quarters_mentioned": self._extract_quarters(query),
+            "metrics_needed": self._extract_metrics_needed(query),
+        }
+        
+        print(f"  Plan: {plan}")
+        state["plan"] = plan
+        return state
+    
+    def retrieve_data(self, state: AgentState) -> AgentState:
+        """Step 2: Retrieve relevant chunks from vector DB."""
+        query = state["query"]
+        plan = state["plan"]
+        
+        print(f"\n[RETRIEVAL] Searching vector database...")
+        
+        # Generate query embedding
+        query_vector = self.encoder.encode(query).tolist()
+        
+        # Search with filters
+        results = self.vector_client.search(
+            collection_name="fab_financials",
+            query_vector=query_vector,
+            limit=10
+        )
+        
+        # Convert to chunks
+        chunks = []
+        for result in results:
+            chunks.append({
+                "content": result.payload["full_content"],
+                "quarter": result.payload["quarter"],
+                "year": result.payload["year"],
+                "quarter_year": result.payload["quarter_year"],
+                "section": result.payload["section"],
+                "page": result.payload["page"],
+                "score": result.score,
+                "source_file": result.payload["source_file"],
+            })
+        
+        print(f"  Retrieved {len(chunks)} chunks")
+        if chunks:
+            print(f"  Top result: {chunks[0]['quarter']} {chunks[0]['year']}, section: {chunks[0]['section']}, score: {chunks[0]['score']:.3f}")
+        
+        state["retrieved_chunks"] = chunks
+        return state
+    
+    def extract_metrics(self, state: AgentState) -> AgentState:
+        """Step 3: Extract financial metrics from retrieved chunks."""
+        chunks = state["retrieved_chunks"]
+        
+        print(f"\n[EXTRACTION] Extracting metrics from chunks...")
+        
+        # Simple extraction - look for numbers in content
+        extracted = {}
+        
+        for i, chunk in enumerate(chunks[:5]):  # Process top 5 chunks
+            content = chunk["content"]
+            
+            # Look for net profit mentions
+            import re
+            
+            # Pattern: "Net profit for the period" followed by numbers
+            matches = re.findall(r'Net profit[^\d]*?([\d,]+)', content, re.IGNORECASE)
+            if matches:
+                value_str = matches[0].replace(',', '')
+                try:
+                    value = float(value_str)
+                    key = f"Net Profit {chunk['quarter']} {chunk['year']}"
+                    extracted[key] = {
+                        "value": value,
+                        "quarter": chunk["quarter"],
+                        "year": chunk["year"],
+                        "source": f"Page {chunk['page']}, {chunk['section']}",
+                        "unit": "AED millions"
+                    }
+                except ValueError:
+                    pass
+            
+            # Look for total assets
+            matches = re.findall(r'Total assets[^\d]*?([\d,]+)', content, re.IGNORECASE)
+            if matches:
+                value_str = matches[0].replace(',', '')
+                try:
+                    value = float(value_str)
+                    key = f"Total Assets {chunk['quarter']} {chunk['year']}"
+                    extracted[key] = {
+                        "value": value,
+                        "quarter": chunk["quarter"],
+                        "year": chunk["year"],
+                        "source": f"Page {chunk['page']}, {chunk['section']}",
+                        "unit": "AED millions"
+                    }
+                except ValueError:
+                    pass
+        
+        print(f"  Extracted {len(extracted)} metrics")
+        if extracted:
+            print(f"  Metrics: {list(extracted.keys())[:3]}")
+        
+        state["extracted_metrics"] = extracted
+        return state
+    
+    def calculate_results(self, state: AgentState) -> AgentState:
+        """Step 4: Perform calculations if needed."""
+        plan = state["plan"]
+        extracted = state["extracted_metrics"]
+        
+        print(f"\n[CALCULATION] Computing results...")
+        
+        calculations = {}
+        
+        if plan["needs_calculation"] and len(extracted) >= 2:
+            # Find pairs for YoY calculation
+            metrics_by_type = {}
+            for key, data in extracted.items():
+                metric_type = key.split(' ')[0] + ' ' + key.split(' ')[1]  # e.g., "Net Profit"
+                if metric_type not in metrics_by_type:
+                    metrics_by_type[metric_type] = []
+                metrics_by_type[metric_type].append(data)
+            
+            # Calculate YoY for each metric type
+            for metric_type, values in metrics_by_type.items():
+                if len(values) >= 2:
+                    # Sort by year
+                    sorted_values = sorted(values, key=lambda x: x['year'])
+                    old_val = sorted_values[0]['value']
+                    new_val = sorted_values[-1]['value']
+                    
+                    result = yoy_change(float(old_val), float(new_val))
+                    calculations[f"{metric_type} YoY Growth"] = {
+                        "result": result.output,
+                        "formula": result.formula,
+                        "inputs": {
+                            "old": f"{old_val} ({sorted_values[0]['quarter']} {sorted_values[0]['year']})",
+                            "new": f"{new_val} ({sorted_values[-1]['quarter']} {sorted_values[-1]['year']})"
+                        },
+                    }
+                    print(f"  {metric_type} YoY Growth: {result.output:.2f}%")
+        
+        state["calculations"] = calculations
+        return state
+    
+    def synthesize_answer(self, state: AgentState) -> AgentState:
+        """Step 5: Create final comprehensive answer."""
+        query = state["query"]
+        chunks = state["retrieved_chunks"]
+        extracted = state["extracted_metrics"]
+        calculations = state["calculations"]
+        
+        print(f"\n[SYNTHESIS] Generating final answer...")
+        
+        # Build answer
+        answer_parts = []
+        sources = []
+        
+        # Add extracted metrics
+        if extracted:
+            answer_parts.append("**Key Findings:**")
+            for metric_name, metric_data in list(extracted.items())[:5]:
+                value_formatted = f"{metric_data['value']:,.0f}" if metric_data['value'] > 1000 else f"{metric_data['value']:.2f}"
+                answer_parts.append(f"- {metric_name}: {value_formatted} {metric_data.get('unit', '')}")
+                answer_parts.append(f"  Source: {metric_data['source']}")
+                sources.append(metric_data['source'])
+        
+        # Add calculations
+        if calculations:
+            answer_parts.append("\n**Calculations:**")
+            for calc_name, calc_data in calculations.items():
+                answer_parts.append(f"- {calc_name}: {calc_data['result']:.2f}%")
+                answer_parts.append(f"  Formula: {calc_data['formula']}")
+                answer_parts.append(f"  Comparing: {calc_data['inputs']['old']} → {calc_data['inputs']['new']}")
+        
+        # Add top sources
+        if chunks and not extracted:
+            answer_parts.append("\n**Top Sources:**")
+            for chunk in chunks[:3]:
+                source = f"{chunk['quarter']} {chunk['year']}, Page {chunk['page']}, Section: {chunk['section']}"
+                answer_parts.append(f"- {source}")
+                answer_parts.append(f"  Preview: {chunk['content'][:200]}...")
+                sources.append(source)
+        
+        final_answer = "\n".join(answer_parts)
+        
+        state["final_answer"] = final_answer
+        state["sources"] = list(set(sources))
+        state["confidence"] = chunks[0]["score"] if chunks else 0.0
+        
+        return state
+    
+    def _extract_quarters(self, query: str) -> List[str]:
+        """Extract quarter mentions from query."""
+        import re
+        quarters = re.findall(r'Q[1-4]\s*\d{4}', query, re.IGNORECASE)
+        return quarters
+    
+    def _extract_metrics_needed(self, query: str) -> List[str]:
+        """Extract which metrics are needed."""
+        metrics = []
+        query_lower = query.lower()
+        
+        if "net profit" in query_lower or "profit" in query_lower:
+            metrics.append("net_profit")
+        if "assets" in query_lower:
+            metrics.append("total_assets")
+        if "equity" in query_lower or "roe" in query_lower:
+            metrics.append("shareholder_equity")
+        
+        return metrics
+    
+    def run(self, query: str) -> Dict[str, Any]:
+        """Run the complete workflow for a query."""
+        print("="*70)
+        print(f"FAB Financial Agent - Processing Query")
+        print("="*70)
+        
+        initial_state = {
+            "query": query,
+            "plan": {},
+            "retrieved_chunks": [],
+            "extracted_metrics": {},
+            "calculations": {},
+            "final_answer": "",
+            "sources": [],
+            "confidence": 0.0,
+        }
+        
+        # Execute workflow
+        result = self.workflow.invoke(initial_state)
+        
+        print("\n" + "="*70)
+        print("FINAL ANSWER")
+        print("="*70)
+        print(result["final_answer"])
+        print(f"\nConfidence: {result['confidence']:.2%}")
+        
+        return result
+
+
+def main():
+    """Test the agent with sample queries."""
+    agent = FABFinancialAgent()
+    
+    # Test queries
+    test_queries = [
+        "What was the net profit in Q1 2025?",
+        "Calculate the year-over-year growth in net profit between Q1 2024 and Q1 2025",
+        "What are the total assets?",
+    ]
+    
+    for query in test_queries:
+        print("\n\n")
+        result = agent.run(query)
+        print("\n" + "-"*70)
+        input("Press Enter to continue to next query...")
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,24 @@
+Metadata-Version: 2.4
+Name: fab-financial-agent
+Version: 0.1.0
+Summary: Multi-agent system for FAB financial analysis
+Requires-Python: >=3.10
+License-File: LICENSE
+Requires-Dist: langchain>=0.1.0
+Requires-Dist: langchain-openai>=0.0.5
+Requires-Dist: langgraph>=0.0.20
+Requires-Dist: qdrant-client>=1.7.0
+Requires-Dist: pymupdf>=1.23.0
+Requires-Dist: python-dotenv>=1.0.0
+Requires-Dist: pydantic>=2.0.0
+Requires-Dist: pandas>=2.0.0
+Requires-Dist: numpy>=1.24.0
+Requires-Dist: anthropic>=0.18.0
+Provides-Extra: dev
+Requires-Dist: pytest>=7.4.0; extra == "dev"
+Requires-Dist: pytest-cov>=4.1.0; extra == "dev"
+Requires-Dist: black>=23.0.0; extra == "dev"
+Provides-Extra: test
+Requires-Dist: pytest>=7.4.0; extra == "test"
+Requires-Dist: pytest-cov>=4.1.0; extra == "test"
+Dynamic: license-file

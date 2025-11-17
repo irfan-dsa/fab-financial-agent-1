@@ -1,0 +1,40 @@
+{
+  "periods": {
+    "Q1_2024": {
+      "missing": [
+        "net_fee_and_commission_income"
+      ],
+      "invalid": []
+    },
+    "Q1_2025": {
+      "missing": [
+        "net_fee_and_commission_income"
+      ],
+      "invalid": []
+    },
+    "Q2_2023": {
+      "missing": [
+        "net_fee_and_commission_income"
+      ],
+      "invalid": []
+    },
+    "Q2_2024": {
+      "missing": [
+        "net_fee_and_commission_income"
+      ],
+      "invalid": []
+    },
+    "Q3_2023": {
+      "missing": [
+        "net_fee_and_commission_income",
+        "shareholder_equity"
+      ],
+      "invalid": []
+    }
+  },
+  "summary": {
+    "period_count": 5,
+    "missing": 6,
+    "invalid": 0
+  }
+}
